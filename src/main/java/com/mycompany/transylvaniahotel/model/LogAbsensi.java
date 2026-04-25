@@ -1,16 +1,16 @@
 
 package com.mycompany.transylvaniahotel.model;
 
-import java.time.LocalDateTime; // Standar Java 8+ untuk presisi waktu [cite: 255]
+import java.time.LocalDateTime; 
 
 public class LogAbsensi {
-    // 1. Deklarasi Atribut Private
-    private String idLog;            // UUID unik [cite: 126]
-    private String uidRfid;          // Foreign key identitas tamu [cite: 127]
-    private LocalDateTime waktuTap;  // Timestamp aktivitas [cite: 128]
-    private String status;           // Status "IN" (Check-in) atau "OUT" (Check-out) [cite: 128]
+    
+    private String idLog; 
+    private String uidRfid; 
+    private LocalDateTime waktuTap; 
+    private String status;         
 
-    // 2. Constructor Berparameter
+
     public LogAbsensi(String idLog, String uidRfid, LocalDateTime waktuTap, String status) {
         this.idLog = idLog;
         this.uidRfid = uidRfid;
@@ -18,7 +18,7 @@ public class LogAbsensi {
         this.status = status;
     }
 
-    // 3. Accessors (Getter & Setter)
+    
     public String getIdLog() { return idLog; }
     public void setIdLog(String idLog) { this.idLog = idLog; }
 
