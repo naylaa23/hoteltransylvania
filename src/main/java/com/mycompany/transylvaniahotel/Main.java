@@ -1,8 +1,9 @@
 package com.mycompany.transylvaniahotel;
 
 
-import com.mycompany.transylvania.hotel.dao.BaseDAO;
-import com.mycompany.transylvania.hotel.dao.GenericDAO;
+import com.mycompany.transylvaniahotel.dao.BaseDAO;
+import com.mycompany.transylvaniahotel.dao.GenericDAO;
+
 
 import com.mycompany.transylvaniahotel.model.Tamu;
 import com.mycompany.transylvaniahotel.model.LogAbsensi;
@@ -13,8 +14,8 @@ public class Main {
         System.out.println("=== Project Transylvania: Sistem Manajemen Hotel RFID ===");
         
        
-        BaseDAO<Tamu> tamuRepo = new GenericDAO<>(Tamu.class);
-        BaseDAO<LogAbsensi> logRepo = new GenericDAO<>(LogAbsensi.class);
+        BaseDAO<Tamu> tamuRepo = new GenericDAO<>("tamu", Tamu.class); 
+        BaseDAO<LogAbsensi> logRepo = new GenericDAO<>("log_absensi", LogAbsensi.class);
 
        
         Tamu tamuBaru = new Tamu("RFID-998877", "BK-001", "Dracula", "Room 666");
