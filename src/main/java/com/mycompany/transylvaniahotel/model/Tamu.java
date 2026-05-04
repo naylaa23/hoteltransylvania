@@ -8,7 +8,7 @@ public class Tamu {
     private String nomorKamar;   
 
     
-  
+    public Tamu () {}
     public Tamu(String uidRfid, String idPemesanan, String namaTamu, String nomorKamar) {
         this.uidRfid = uidRfid;
         this.idPemesanan = idPemesanan;
