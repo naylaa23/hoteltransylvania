@@ -1,7 +1,6 @@
-
 package com.mycompany.transylvaniahotel.model;
 
-import java.time.LocalDateTime; 
+import java.time.LocalDateTime;
 
 public class LogAbsensi {
     
@@ -10,7 +9,11 @@ public class LogAbsensi {
     private LocalDateTime waktuTap; 
     private String status;         
 
+    
+    public LogAbsensi() {
+    }
 
+    
     public LogAbsensi(String idLog, String uidRfid, LocalDateTime waktuTap, String status) {
         this.idLog = idLog;
         this.uidRfid = uidRfid;
