@@ -1,5 +1,10 @@
 package com.mycompany.transylvaniahotel.config;
 
+/**
+ *
+ * @author alfathrev
+ */
+
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;

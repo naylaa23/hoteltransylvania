@@ -12,16 +12,15 @@ public class Login extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Login.class.getName());
 
-    /**
-     * Creates new form Login
-     */
+    
     public Login() {
         initComponents();
-        // Membuat frame aplikasi otomatis muncul di tengah monitor saat pertama kali dibuka
+    
         this.setLocationRelativeTo(null);
 
-        // Menggunakan Layout Manager pada Content Pane agar posisi jPanel1 DIKUNCI selalu di tengah
+    
         this.getContentPane().setLayout(new java.awt.LayoutManager() {
+            
             @Override
             public void addLayoutComponent(String name, java.awt.Component comp) {
             }
@@ -42,26 +41,25 @@ public class Login extends javax.swing.JFrame {
 
             @Override
             public void layoutContainer(java.awt.Container parent) {
-                // Ambil ukuran area JFrame terbaru
+
                 int frameWidth = parent.getWidth();
                 int frameHeight = parent.getHeight();
 
-                // Ukuran konstan panel login kamu
+
                 int panelWidth = 800;
                 int panelHeight = 500;
 
-                // Hitung koordinat tengah
+
                 int x = (frameWidth - panelWidth) / 2;
                 int y = (frameHeight - panelHeight) / 2;
 
-                // Paksa jPanel1 menempati area tengah, tidak peduli pop-up dibuka/tutup
                 if (jPanel1 != null) {
                     jPanel1.setBounds(x, y, panelWidth, panelHeight);
                 }
             }
         });
 
-        // Bersihkan area dan gambar ulang layout baru
+        
         this.getContentPane().revalidate();
         this.getContentPane().repaint();
     }
@@ -129,7 +127,14 @@ public class Login extends javax.swing.JFrame {
         jPasswordField1.setBackground(new java.awt.Color(255, 255, 255));
         jPasswordField1.setFont(new java.awt.Font("Segoe UI", 0, 15)); // NOI18N
         jPasswordField1.setForeground(new java.awt.Color(0, 0, 0));
-        jPasswordField1.setText("jPasswordField1");
+        jPasswordField1.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                jPasswordField1FocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                jPasswordField1FocusLost(evt);
+            }
+        });
         PanelKanan.add(jPasswordField1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 305, 330, 48));
 
         UsernameFont.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gambar/UsernameFont1.png"))); // NOI18N
@@ -143,6 +148,8 @@ public class Login extends javax.swing.JFrame {
 
         jButton1.setBackground(new java.awt.Color(194, 148, 233));
         jButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/gambar/ButtonLogin.png"))); // NOI18N
+        jButton1.setBorderPainted(false);
+        jButton1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         jButton1.addActionListener(this::jButton1ActionPerformed);
         PanelKanan.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 370, -1, -1));
 
@@ -170,12 +177,11 @@ public class Login extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // 1. Ambil teks input dari field Username dan Password
-        // .trim() digunakan untuk menghapus spasi tidak sengaja di awal/akhir input
+        
         String usernameInput = usernamekolom.getText().trim();
-        String passwordInput = new String(jPasswordField1.getPassword()); // Mengubah char[] password ke String
+        String passwordInput = new String(jPasswordField1.getPassword());
 
-        // 2. Validasi awal: cegah proses jika ada field yang masih kosong
+        
         if (usernameInput.isEmpty() || passwordInput.isEmpty()) {
             javax.swing.JOptionPane.showMessageDialog(this,
                     "Username dan Password tidak boleh kosong!",
@@ -185,54 +191,54 @@ public class Login extends javax.swing.JFrame {
         }
 
         try {
-            // 3. Inisialisasi GenericDAO untuk model Karyawan dan koleksi bernama "karyawan"
+            
             com.mycompany.transylvaniahotel.dao.BaseDAO<com.mycompany.transylvaniahotel.model.Karyawan> karyawanDAO
                     = new com.mycompany.transylvaniahotel.dao.GenericDAO<>("karyawan", com.mycompany.transylvaniahotel.model.Karyawan.class);
 
-            // 4. Cari data karyawan berdasarkan field "username" yang diketik user
-            // Fungsi getById() di GenericDAO milikmu akan me-return objek Karyawan jika ketemu, atau null jika tidak ada
             com.mycompany.transylvaniahotel.model.Karyawan akunKaryawan = karyawanDAO.getById("username", usernameInput);
 
-            // 5. Verifikasi akun hasil query dari MongoDB
+            
             if (akunKaryawan != null) {
-                // Jika username ada, validasi apakah password-nya cocok menggunakan .getPassword() dari entity Karyawan
+                
                 if (akunKaryawan.getPassword().equals(passwordInput)) {
 
-                    // === LOGIN SUKSES ===
+                    
                     javax.swing.JOptionPane.showMessageDialog(this,
                             "Login Berhasil!\nSelamat Datang, " + akunKaryawan.getNamaKaryawan() + " [" + akunKaryawan.getJabatan() + "]",
                             "Akses Berhasil",
                             javax.swing.JOptionPane.INFORMATION_MESSAGE);
 
-                    // Menutup frame login saat ini karena login sudah berhasil
+                    //nutup page login klo berhasil
                     this.dispose();
 
-                    // Catatan: Jika nanti kamu sudah membuat class Dashboard di package gui, 
-                    // tinggal aktifkan dua baris di bawah ini untuk berpindah halaman:
-                    // com.mycompany.transylvaniahotel.gui.DashboardUtama dashboard = new com.mycompany.transylvaniahotel.gui.DashboardUtama();
-                    // dashboard.setVisible(true);
+                    java.awt.EventQueue.invokeLater(() -> {
+                        Dashboard dashboard = new Dashboard();
+                        dashboard.setVisible(true);
+
+                    });
+
                 } else {
                     // Jika username ditemukan tetapi password-nya salah
                     javax.swing.JOptionPane.showMessageDialog(this,
                             "Password yang Anda masukkan salah!",
                             "Login Gagal",
                             javax.swing.JOptionPane.ERROR_MESSAGE);
-                    jPasswordField1.setText(""); // Kosongkan kolom password
-                    jPasswordField1.requestFocus(); // Taruh kursor kembali ke kolom password
+                    jPasswordField1.setText(""); //buat kosongin kolom pw
+                    jPasswordField1.requestFocus(); //naroh kursor ke password
                 }
             } else {
-                // Jika username tidak ditemukan sama sekali di koleksi MongoDB
+                //klo ga nemu username di database
                 javax.swing.JOptionPane.showMessageDialog(this,
                         "Username tidak terdaftar di sistem hotel!",
                         "Login Gagal",
                         javax.swing.JOptionPane.ERROR_MESSAGE);
                 usernamekolom.setText("");
                 jPasswordField1.setText("");
-                usernamekolom.requestFocus(); // Taruh kursor kembali ke kolom username
+                usernamekolom.requestFocus(); //buat naroh kursor ke username
             }
 
         } catch (Exception e) {
-            // Antisipasi jika service database MongoDB lokal (atau mongod) belum dijalankan di PC
+            
             javax.swing.JOptionPane.showMessageDialog(this,
                     "Gagal terhubung ke database MongoDB!\nPastikan MongoDB Compass atau Service aktif.\nError: " + e.getMessage(),
                     "Database Error",
@@ -240,6 +246,20 @@ public class Login extends javax.swing.JFrame {
             e.printStackTrace();
         }
     }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void jPasswordField1FocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jPasswordField1FocusGained
+        String pass = String.valueOf(jPasswordField1.getPassword());
+        if (pass.equals("Password")) {
+            jPasswordField1.setText("");
+        }
+    }//GEN-LAST:event_jPasswordField1FocusGained
+
+    private void jPasswordField1FocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jPasswordField1FocusLost
+        String pass = String.valueOf(jPasswordField1.getPassword()).trim();
+        if (pass.isEmpty()) {
+            jPasswordField1.setText("Password");
+        }
+    }//GEN-LAST:event_jPasswordField1FocusLost
 
     /**
      * @param args the command line arguments
