@@ -1,5 +1,8 @@
 package com.mycompany.transylvaniahotel.config.koneksi;
-
+/**
+ *
+ * @author alfathrev
+ */
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 import com.mycompany.transylvaniahotel.config.MongoManager;

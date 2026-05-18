@@ -1,5 +1,8 @@
 package com.mycompany.transylvaniahotel.model;
-
+/**
+ *
+ * @author alfathrev
+ */
 public class Kamar {
     private String nomorKamar;
     private String tipeKamar;
