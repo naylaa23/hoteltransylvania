@@ -470,13 +470,42 @@ public class Dashboard extends javax.swing.JFrame {
         }
 
         try {
+            // 1. Ambil data karyawan lama dari database untuk mengecek password lama
+            com.mycompany.transylvaniahotel.model.Karyawan akunLama = karyawanDAO.getById("username", usernameText);
 
+            if (akunLama == null) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Data Karyawan tidak ditemukan di database!", "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // 2. Tentukan isi password (apakah di-hash baru atau pakai yang lama)
+            String finalPassword;
+            if (!pass.isEmpty()) {
+                // Jika kolom password diisi, lakukan Hashing SHA-256 baru
+                java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+                byte[] hashBytes = md.digest(pass.getBytes());
+                StringBuilder hexString = new StringBuilder();
+                for (byte b : hashBytes) {
+                    String hex = Integer.toHexString(0xff & b);
+                    if (hex.length() == 1) {
+                        hexString.append('0');
+                    }
+                    hexString.append(hex);
+                }
+                finalPassword = hexString.toString();
+            } else {
+                // Jika kolom password kosong, pertahankan password hash yang lama
+                finalPassword = akunLama.getPassword();
+            }
+
+            // 3. Hapus data lama (sesuai logika bawaan kodemu)
             karyawanDAO.delete("username", usernameText);
 
+            // 4. Buat objek data baru dan simpan ke database
             com.mycompany.transylvaniahotel.model.Karyawan k = new com.mycompany.transylvaniahotel.model.Karyawan();
             k.setUsername(usernameText);
             k.setNamaKaryawan(nama);
-            k.setPassword(pass);
+            k.setPassword(finalPassword); // <--- Menggunakan password yang aman
             k.setJabatan(jab);
 
             karyawanDAO.save(k);
@@ -508,17 +537,70 @@ public class Dashboard extends javax.swing.JFrame {
         }
 
         try {
-            com.mycompany.transylvaniahotel.model.Karyawan k = new com.mycompany.transylvaniahotel.model.Karyawan();
-            k.setUsername(usernameText);
-            k.setNamaKaryawan(nama);
-            k.setPassword(pass);
-            k.setJabatan(jab);
+            // 1. Cek terlebih dahulu apakah username ini sudah ada di database MongoDB
+            com.mycompany.transylvaniahotel.model.Karyawan akunAda = karyawanDAO.getById("username", usernameText);
 
-            karyawanDAO.save(k);
+            // Variabel untuk menampung format hash password
+            String hashedPassword = "";
 
-            javax.swing.JOptionPane.showMessageDialog(this, "Data Karyawan berhasil disimpan!");
+            if (akunAda != null) {
+                // =========================================================================
+                // [KONDISI: UPDATE DATA]
+                // =========================================================================
+                // Jika password di form panjangnya 64 karakter hex, berarti itu hash lama (tidak diubah admin)
+                if (pass.length() == 64) {
+                    hashedPassword = pass; // Gunakan hash yang sudah ada
+                } else {
+                    // Jika panjangnya bukan 64, berarti admin sedang mengetik password plaintext baru
+                    java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+                    byte[] hashBytes = md.digest(pass.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    StringBuilder hexString = new StringBuilder();
+                    for (byte b : hashBytes) {
+                        String hex = String.format("%02x", b);
+                        hexString.append(hex);
+                    }
+                    hashedPassword = hexString.toString();
+                }
+
+                // Perbarui isi data objek yang ditarik dari database
+                akunAda.setNamaKaryawan(nama);
+                akunAda.setPassword(hashedPassword);
+                akunAda.setJabatan(jab);
+
+                // Panggil method update dari GenericDAO milikmu
+                // CATATAN: Pastikan GenericDAO kamu mendukung method update seperti ini, atau sesuaikan namanya
+                karyawanDAO.update("username", usernameText, akunAda);
+
+                javax.swing.JOptionPane.showMessageDialog(this, "Data Karyawan berhasil diperbarui (di-update)!");
+
+            } else {
+                // =========================================================================
+                // [KONDISI: INSERT DATA BARU]
+                // =========================================================================
+                java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+                byte[] hashBytes = md.digest(pass.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                StringBuilder hexString = new StringBuilder();
+                for (byte b : hashBytes) {
+                    String hex = String.format("%02x", b);
+                    hexString.append(hex);
+                }
+                hashedPassword = hexString.toString();
+
+                com.mycompany.transylvaniahotel.model.Karyawan k = new com.mycompany.transylvaniahotel.model.Karyawan();
+                k.setUsername(usernameText);
+                k.setNamaKaryawan(nama);
+                k.setPassword(hashedPassword);
+                k.setJabatan(jab);
+
+                // Masukkan sebagai data baru
+                karyawanDAO.save(k);
+
+                javax.swing.JOptionPane.showMessageDialog(this, "Data Karyawan baru berhasil disimpan!");
+            }
+
             bersihkanForm();
             loadDataKaryawan(null);
+
         } catch (Exception ex) {
             logger.log(java.util.logging.Level.SEVERE, "Gagal menyimpan data", ex);
             javax.swing.JOptionPane.showMessageDialog(this, "Gagal menyimpan data: " + ex.getMessage(), "Error", javax.swing.JOptionPane.ERROR_MESSAGE);
@@ -562,69 +644,69 @@ public class Dashboard extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_jTextField2FocusGained
 
-        public void loadDataKaryawan(String keyword) {
-            containerKaryawan.removeAll();
+    public void loadDataKaryawan(String keyword) {
+        containerKaryawan.removeAll();
 
-            java.util.List<com.mycompany.transylvaniahotel.model.Karyawan> listKaryawan;
+        java.util.List<com.mycompany.transylvaniahotel.model.Karyawan> listKaryawan;
 
-            if (keyword == null || keyword.isEmpty() || keyword.equals("Cari...")) {
-                listKaryawan = karyawanDAO.getAll();
-            } else {
-                listKaryawan = ((com.mycompany.transylvaniahotel.dao.GenericDAO<com.mycompany.transylvaniahotel.model.Karyawan>) karyawanDAO).searchKaryawanMultiField(keyword);
-            }
-
-            for (com.mycompany.transylvaniahotel.model.Karyawan kar : listKaryawan) {
-                CardKaryawan card = new CardKaryawan(kar, this);
-                containerKaryawan.add(card);
-            }
-
-            int totalData = listKaryawan.size();
-            int jumlahBaris = (int) Math.ceil((double) totalData / 4);
-            int tinggiPerBaris = 170;
-            int totalTinggiPanel = jumlahBaris * tinggiPerBaris;
-
-            containerKaryawan.setPreferredSize(new java.awt.Dimension(containerKaryawan.getWidth(), totalTinggiPanel));
-            containerKaryawan.revalidate();
-            containerKaryawan.repaint();
+        if (keyword == null || keyword.isEmpty() || keyword.equals("Cari...")) {
+            listKaryawan = karyawanDAO.getAll();
+        } else {
+            listKaryawan = ((com.mycompany.transylvaniahotel.dao.GenericDAO<com.mycompany.transylvaniahotel.model.Karyawan>) karyawanDAO).searchKaryawanMultiField(keyword);
         }
 
-        private void bersihkanForm() {
-            txtUsername.setText("");
-            txtUsername.setEditable(true);
-            txtnamaKaryawan.setText("");
-            txtPassword1.setText("");
-            txtJabatan.setText("");
+        for (com.mycompany.transylvaniahotel.model.Karyawan kar : listKaryawan) {
+            CardKaryawan card = new CardKaryawan(kar, this);
+            containerKaryawan.add(card);
         }
 
-        public void setFormKaryawan(com.mycompany.transylvaniahotel.model.Karyawan k) {
-            txtUsername.setText(k.getUsername());
-            txtUsername.setEditable(false); 
-            txtnamaKaryawan.setText(k.getNamaKaryawan());
-            txtPassword1.setText(k.getPassword());
-            txtJabatan.setText(k.getJabatan());
-        }
+        int totalData = listKaryawan.size();
+        int jumlahBaris = (int) Math.ceil((double) totalData / 4);
+        int tinggiPerBaris = 170;
+        int totalTinggiPanel = jumlahBaris * tinggiPerBaris;
 
-        public static void main(String args[]) {
-            /* Set the Nimbus look and feel */
-            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+        containerKaryawan.setPreferredSize(new java.awt.Dimension(containerKaryawan.getWidth(), totalTinggiPanel));
+        containerKaryawan.revalidate();
+        containerKaryawan.repaint();
+    }
+
+    private void bersihkanForm() {
+        txtUsername.setText("");
+        txtUsername.setEditable(true);
+        txtnamaKaryawan.setText("");
+        txtPassword1.setText("");
+        txtJabatan.setText("");
+    }
+
+    public void setFormKaryawan(com.mycompany.transylvaniahotel.model.Karyawan k) {
+        txtUsername.setText(k.getUsername());
+        txtUsername.setEditable(false);
+        txtnamaKaryawan.setText(k.getNamaKaryawan());
+        txtPassword1.setText(k.getPassword());
+        txtJabatan.setText(k.getJabatan());
+    }
+
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
          * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-             */
-            try {
-                for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                    if ("Nimbus".equals(info.getName())) {
-                        javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                        break;
-                    }
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
                 }
-            } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-                logger.log(java.util.logging.Level.SEVERE, null, ex);
             }
-            //</editor-fold>
-
-            /* Create and display the form */
-            java.awt.EventQueue.invokeLater(() -> new Dashboard().setVisible(true));
+        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
+            logger.log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(() -> new Dashboard().setVisible(true));
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel BagianAtas;

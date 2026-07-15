@@ -12,15 +12,15 @@ public class Login extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Login.class.getName());
 
-    
     public Login() {
         initComponents();
-    
+
+        jPasswordField1.setText("");
+
         this.setLocationRelativeTo(null);
 
-    
         this.getContentPane().setLayout(new java.awt.LayoutManager() {
-            
+
             @Override
             public void addLayoutComponent(String name, java.awt.Component comp) {
             }
@@ -45,10 +45,8 @@ public class Login extends javax.swing.JFrame {
                 int frameWidth = parent.getWidth();
                 int frameHeight = parent.getHeight();
 
-
                 int panelWidth = 800;
                 int panelHeight = 500;
-
 
                 int x = (frameWidth - panelWidth) / 2;
                 int y = (frameHeight - panelHeight) / 2;
@@ -59,7 +57,6 @@ public class Login extends javax.swing.JFrame {
             }
         });
 
-        
         this.getContentPane().revalidate();
         this.getContentPane().repaint();
     }
@@ -177,11 +174,13 @@ public class Login extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        
-        String usernameInput = usernamekolom.getText().trim();
-        String passwordInput = new String(jPasswordField1.getPassword());
 
-        
+        String usernameInput = usernamekolom.getText().trim();
+
+        // PEMBERSIHAN MUTLAK: Ambil password dan langsung potong spasi liar di ujung teks
+        String passwordInput = new String(jPasswordField1.getPassword()).trim();
+
+        // Cek jika kolom kosong atau user masih menyisakan teks placeholder bawaan UI
         if (usernameInput.isEmpty() || passwordInput.isEmpty()) {
             javax.swing.JOptionPane.showMessageDialog(this,
                     "Username dan Password tidak boleh kosong!",
@@ -191,54 +190,91 @@ public class Login extends javax.swing.JFrame {
         }
 
         try {
-            
+            // 1. Inisialisasi DAO untuk model Karyawan
             com.mycompany.transylvaniahotel.dao.BaseDAO<com.mycompany.transylvaniahotel.model.Karyawan> karyawanDAO
                     = new com.mycompany.transylvaniahotel.dao.GenericDAO<>("karyawan", com.mycompany.transylvaniahotel.model.Karyawan.class);
 
+            // 2. Ambil data akun berdasarkan username inputan
             com.mycompany.transylvaniahotel.model.Karyawan akunKaryawan = karyawanDAO.getById("username", usernameInput);
 
-            
             if (akunKaryawan != null) {
-                
-                if (akunKaryawan.getPassword().equals(passwordInput)) {
 
-                    
+                // =========================================================================
+                // CODE CEK INTEGRITAS DATA MONGODB
+                // =========================================================================
+                System.out.println("====== CEK DATA DARI MONGODB ======");
+                System.out.println("Username dari Mongo : " + akunKaryawan.getUsername());
+                System.out.println("Password dari Mongo : " + akunKaryawan.getPassword());
+                System.out.println("Nama dari Mongo     : " + akunKaryawan.getNamaKaryawan());
+                System.out.println("===================================");
+                // =========================================================================
+
+                // =========================================================================
+                // SPRINT 3 INTEGRATION: KRIPTOGRAFI HASHING SHA-256
+                // Ubah password plaintext dari form input menjadi format SHA-256 Hex murni
+                // =========================================================================
+                java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+                byte[] hashBytes = md.digest(passwordInput.getBytes());
+                StringBuilder hexString = new StringBuilder();
+                for (byte b : hashBytes) {
+                    String hex = Integer.toHexString(0xff & b);
+                    if (hex.length() == 1) {
+                        hexString.append('0');
+                    }
+                    hexString.append(hex);
+                }
+                String hashedPasswordInput = hexString.toString();
+
+                // =========================================================================
+// KODE DEBUG SAKTI - CEK INTEGRITAS DATA
+// =========================================================================
+                System.out.println("\n=== DATA YANG DIBACA JAVA CHAT ===");
+                System.out.println("Username Input       : '" + usernameInput + "'");
+                System.out.println("Password Input (Asli): '" + passwordInput + "'");
+                System.out.println("Hasil Hash Java      : " + hashedPasswordInput);
+                System.out.println("Password dari Mongo  : " + (akunKaryawan != null ? akunKaryawan.getPassword() : "AKUN NULL"));
+                System.out.println("===================================\n");
+// =========================================================================
+                // =========================================================================
+
+                // 3. Bandingkan password hasil hash inputan dengan password hash di database
+                // Ditambahkan .trim() ganda untuk menjamin tidak ada spasi hantu dari database
+                if (akunKaryawan.getPassword().trim().equals(hashedPasswordInput.trim())) {
+
                     javax.swing.JOptionPane.showMessageDialog(this,
                             "Login Berhasil!\nSelamat Datang, " + akunKaryawan.getNamaKaryawan() + " [" + akunKaryawan.getJabatan() + "]",
                             "Akses Berhasil",
                             javax.swing.JOptionPane.INFORMATION_MESSAGE);
 
-                    //nutup page login klo berhasil
+                    // Tutup halaman login
                     this.dispose();
 
                     java.awt.EventQueue.invokeLater(() -> {
                         Dashboard dashboard = new Dashboard();
                         dashboard.setVisible(true);
-
                     });
 
                 } else {
-                    // Jika username ditemukan tetapi password-nya salah
+                    // Jika password hash tidak cocok
                     javax.swing.JOptionPane.showMessageDialog(this,
                             "Password yang Anda masukkan salah!",
                             "Login Gagal",
                             javax.swing.JOptionPane.ERROR_MESSAGE);
-                    jPasswordField1.setText(""); //buat kosongin kolom pw
-                    jPasswordField1.requestFocus(); //naroh kursor ke password
+                    jPasswordField1.setText("");
+                    jPasswordField1.requestFocus();
                 }
             } else {
-                //klo ga nemu username di database
+                // Jika username tidak ada di koleksi MongoDB
                 javax.swing.JOptionPane.showMessageDialog(this,
                         "Username tidak terdaftar di sistem hotel!",
                         "Login Gagal",
                         javax.swing.JOptionPane.ERROR_MESSAGE);
                 usernamekolom.setText("");
                 jPasswordField1.setText("");
-                usernamekolom.requestFocus(); //buat naroh kursor ke username
+                usernamekolom.requestFocus();
             }
 
         } catch (Exception e) {
-            
             javax.swing.JOptionPane.showMessageDialog(this,
                     "Gagal terhubung ke database MongoDB!\nPastikan MongoDB Compass atau Service aktif.\nError: " + e.getMessage(),
                     "Database Error",
@@ -248,43 +284,37 @@ public class Login extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jPasswordField1FocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jPasswordField1FocusGained
-        String pass = String.valueOf(jPasswordField1.getPassword());
-        if (pass.equals("Password")) {
-            jPasswordField1.setText("");
-        }
+
     }//GEN-LAST:event_jPasswordField1FocusGained
 
     private void jPasswordField1FocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_jPasswordField1FocusLost
-        String pass = String.valueOf(jPasswordField1.getPassword()).trim();
-        if (pass.isEmpty()) {
-            jPasswordField1.setText("Password");
-        }
+
     }//GEN-LAST:event_jPasswordField1FocusLost
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+        /**
+         * @param args the command line arguments
          */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
+        public static void main(String args[]) {
+            /* Set the Nimbus look and feel */
+            //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+            /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+             */
+            try {
+                for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                    if ("Nimbus".equals(info.getName())) {
+                        javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                        break;
+                    }
                 }
+            } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
+                logger.log(java.util.logging.Level.SEVERE, null, ex);
             }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
+            //</editor-fold>
 
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new Login().setVisible(true));
-    }
+            /* Create and display the form */
+            java.awt.EventQueue.invokeLater(() -> new Login().setVisible(true));
+        }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel LoginLogo;
